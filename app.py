@@ -1,11 +1,16 @@
 import re
 import os
+import json
 import fitz
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 from groq import Groq
+from datetime import datetime
+import gspread
+from google.oauth2.service_account import Credentials
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -889,6 +894,128 @@ with st.sidebar:
     st.divider()
     st.caption("Built by **Gokul Krishna T. B.**")
 
+# ── Google Analytics injection ────────────────────────────────────────────────
+GA_ID = "G-NNLCK8ZFVN"
+components.html(f"""
+<script async src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+  gtag('config', '{GA_ID}');
+</script>
+""", height=0)
+
+# ── Google Sheets helpers ─────────────────────────────────────────────────────
+SHEET_COLUMNS = [
+    "Timestamp", "Industry", "Report Year",
+    "Overall Score", "CSRD %", "BRSR %", "GRI Disclosed", "GRI Total",
+    "Greenwashing Risk", "Gaps Count", "Flags Count",
+    "Env Score", "Social Score", "Governance Score", "Climate Risk Score", "Supply Chain Score",
+]
+
+INDUSTRIES = [
+    "Energy & Utilities", "Manufacturing", "Financial Services",
+    "Healthcare & Pharma", "Technology", "Retail & Consumer Goods",
+    "Transport & Logistics", "Real Estate & Construction",
+    "Agriculture & Food", "Mining & Resources", "Other",
+]
+
+
+@st.cache_resource
+def get_sheet():
+    """Connect to Google Sheet using service account credentials from Streamlit secrets."""
+    try:
+        creds_dict = dict(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
+        creds = Credentials.from_service_account_info(
+            creds_dict,
+            scopes=["https://www.googleapis.com/auth/spreadsheets"],
+        )
+        client = gspread.authorize(creds)
+        sheet_id = st.secrets.get("GOOGLE_SHEET_ID", "")
+        return client.open_by_key(sheet_id).sheet1
+    except Exception:
+        return None
+
+
+def ensure_headers(sheet):
+    """Add header row if sheet is empty."""
+    try:
+        if sheet and not sheet.row_values(1):
+            sheet.append_row(SHEET_COLUMNS)
+    except Exception:
+        pass
+
+
+def submit_to_community(sheet, industry, report_year, result, pillar_scores,
+                         gri_disclosed, gri_total):
+    """Append one anonymous row to the community sheet."""
+    try:
+        ensure_headers(sheet)
+        row = [
+            datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
+            industry,
+            report_year,
+            result["overall"],
+            result["csrd"],
+            result["brsr"],
+            gri_disclosed,
+            gri_total,
+            result["risk"],
+            result["gaps"],
+            result["flags"],
+            pillar_scores.get("Environment", 0),
+            pillar_scores.get("Social", 0),
+            pillar_scores.get("Governance", 0),
+            pillar_scores.get("Climate Risk", 0),
+            pillar_scores.get("Supply Chain", 0),
+        ]
+        sheet.append_row(row)
+        return True
+    except Exception:
+        return False
+
+
+def get_community_stats(sheet):
+    """Fetch all rows and compute community stats."""
+    try:
+        records = sheet.get_all_records()
+        if not records:
+            return None
+        df = pd.DataFrame(records)
+        return df
+    except Exception:
+        return None
+
+
+def plot_you_vs_community(your_scores: dict, community_df: pd.DataFrame):
+    """Bar chart comparing your pillar scores vs community average."""
+    cols = {
+        "Environment":    "Env Score",
+        "Social":         "Social Score",
+        "Governance":     "Governance Score",
+        "Climate Risk":   "Climate Risk Score",
+        "Supply Chain":   "Supply Chain Score",
+    }
+    community_avgs = {k: round(community_df[v].mean()) for k, v in cols.items() if v in community_df.columns}
+
+    pillars = list(cols.keys())
+    your_vals = [your_scores.get(p, 0) for p in pillars]
+    comm_vals = [community_avgs.get(p, 0) for p in pillars]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(name="Your Report", x=pillars, y=your_vals,
+                         marker_color="#34d399", text=your_vals,
+                         textposition="outside"))
+    fig.add_trace(go.Bar(name="Community Average", x=pillars, y=comm_vals,
+                         marker_color="#60a5fa", text=comm_vals,
+                         textposition="outside"))
+    fig.update_layout(
+        barmode="group", yaxis_range=[0, 110],
+        **CHART_LAYOUT,
+    )
+    return fig
+
 # ── Hero ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
@@ -903,6 +1030,36 @@ st.markdown("""
     <span class="tag">GHG Protocol</span>
     <span class="tag">Groq AI</span>
     <span class="tag">Greenwashing Risk</span>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Community stat bar ────────────────────────────────────────────────────────
+_sheet = get_sheet()
+_community_df = get_community_stats(_sheet) if _sheet else None
+_total_count  = len(_community_df) if _community_df is not None else 0
+_avg_score    = round(_community_df["Overall Score"].mean()) if _community_df is not None and _total_count > 0 else "—"
+_industries   = _community_df["Industry"].nunique() if _community_df is not None and _total_count > 0 else 0
+
+st.markdown(f"""
+<div style="
+    padding: 14px 24px; border-radius: 14px; margin-bottom: 20px;
+    background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.2);
+    display: flex; gap: 32px; align-items: center; flex-wrap: wrap;
+">
+    <span style="color:#a7f3d0; font-size:13px; font-weight:700;">🌍 Community</span>
+    <span style="color:#f8fafc; font-size:14px;">
+        <strong style="color:#34d399; font-size:22px;">{_total_count}</strong>
+        &nbsp;reports analysed
+    </span>
+    <span style="color:#f8fafc; font-size:14px;">
+        <strong style="color:#60a5fa; font-size:22px;">{_industries}</strong>
+        &nbsp;industries
+    </span>
+    <span style="color:#f8fafc; font-size:14px;">
+        <strong style="color:#f59e0b; font-size:22px;">{_avg_score}</strong>
+        &nbsp;avg score
+    </span>
+    {"<span style='color:#94a3b8; font-size:12px;'>Be one of the first to contribute! 🚀</span>" if _total_count < 10 else ""}
 </div>
 """, unsafe_allow_html=True)
 
@@ -965,6 +1122,63 @@ with c3: kpi_card("BRSR Readiness",      f"{brsr_score}%",       "India NGRBC pr
 with c4: kpi_card("GRI Coverage",        f"{gri_disclosed}/{gri_total}", "GRI standards disclosed", "#f472b6")
 with c5: kpi_card("Greenwashing Risk",   risk_level,             f"{len(greenwashing_df)} flag(s)", risk_color)
 with c6: kpi_card("Disclosure Gaps",     str(len(gaps_df)),      f"{high_gaps} high severity", "#f59e0b")
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ── Community opt-in ──────────────────────────────────────────────────────────
+with st.expander("🌍 Contribute to community benchmarking (optional & anonymous)", expanded=False):
+    st.markdown("""
+    Your scores will be saved **anonymously** — no report content, no email, no personal data.
+    Just your scores + industry + year. This helps build a public benchmark for the ESG community.
+    """)
+    col_a, col_b, col_c = st.columns(3)
+    with col_a:
+        opt_in = st.checkbox("Yes, share my scores anonymously", value=False)
+    with col_b:
+        selected_industry = st.selectbox("Industry", INDUSTRIES, disabled=not opt_in)
+    with col_c:
+        selected_year = st.selectbox("Report Year", list(range(2024, 2018, -1)), disabled=not opt_in)
+
+    if opt_in:
+        if st.button("Submit to community", type="primary"):
+            result_dict = {
+                "overall": overall_score, "csrd": csrd_score,
+                "brsr": brsr_score, "risk": risk_level,
+                "gaps": len(gaps_df), "flags": len(greenwashing_df),
+            }
+            success = submit_to_community(
+                _sheet, selected_industry, selected_year,
+                result_dict, pillar_scores, gri_disclosed, gri_total,
+            )
+            if success:
+                st.success("✅ Submitted! Thank you for contributing to the community benchmark.")
+                st.cache_resource.clear()
+            else:
+                st.error("Submission failed — Google Sheets may not be configured yet.")
+
+# ── Community comparison ──────────────────────────────────────────────────────
+if _community_df is not None and _total_count >= 5:
+    with st.expander("📊 Your scores vs community average", expanded=True):
+        industry_df = _community_df[_community_df["Industry"] == selected_industry] if opt_in and len(_community_df[_community_df["Industry"] == selected_industry]) >= 3 else _community_df
+        label = f"industry average ({selected_industry})" if opt_in and len(industry_df) >= 3 else "overall community average"
+        st.caption(f"Comparing your report against {label} · {len(industry_df)} reports")
+
+        # Percentile ranks
+        p_overall = round((industry_df["Overall Score"] < overall_score).mean() * 100)
+        p_csrd    = round((industry_df["CSRD %"] < csrd_score).mean() * 100)
+
+        pc1, pc2 = st.columns(2)
+        with pc1:
+            kpi_card("Your Percentile (Overall)", f"Top {100 - p_overall}%",
+                     f"Better than {p_overall}% of reports", "#34d399")
+        with pc2:
+            kpi_card("Your Percentile (CSRD)", f"Top {100 - p_csrd}%",
+                     f"Better than {p_csrd}% on CSRD readiness", "#60a5fa")
+
+        st.plotly_chart(plot_you_vs_community(pillar_scores, industry_df), use_container_width=True)
+
+elif _community_df is not None and 0 < _total_count < 5:
+    st.info(f"🌱 {_total_count} report(s) submitted so far — community comparison unlocks at 5. Be an early contributor!")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
