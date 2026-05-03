@@ -162,16 +162,88 @@ EVIDENCE_TERMS = [
 ]
 
 ESRS_TOPICS = {
-    "ESRS E1 – Climate Change":          ["climate", "emissions", "scope 1", "scope 2", "scope 3", "transition plan"],
-    "ESRS E2 – Pollution":               ["pollution", "air emissions", "water pollution", "hazardous"],
-    "ESRS E3 – Water & Marine":          ["water", "water withdrawal", "water consumption", "marine"],
-    "ESRS E4 – Biodiversity":            ["biodiversity", "ecosystem", "habitat", "nature"],
-    "ESRS E5 – Circular Economy":        ["circular", "recycling", "waste", "resource use"],
-    "ESRS S1 – Own Workforce":           ["employees", "workforce", "health and safety", "training", "diversity"],
-    "ESRS S2 – Value Chain Workers":     ["value chain workers", "supplier workers", "labour rights"],
-    "ESRS S3 – Affected Communities":    ["communities", "affected communities", "local community"],
-    "ESRS S4 – Consumers & End-users":   ["consumers", "end-users", "customer safety", "privacy"],
-    "ESRS G1 – Business Conduct":        ["anti-corruption", "ethics", "whistleblowing", "business conduct"],
+    "ESRS E1 – Climate Change": {
+        "section_headers": ["climate change", "ghg emissions", "greenhouse gas", "carbon", "scope 1", "scope 2", "scope 3", "transition plan", "climate strategy"],
+        "required_disclosures": {
+            "GHG emissions data (Scope 1/2/3)": ["scope 1", "scope 2", "scope 3", "tco2e", "co2e", "metric tonnes"],
+            "Transition plan":                   ["transition plan", "decarbonisation", "net zero pathway", "climate action plan"],
+            "Climate targets":                   ["emissions target", "net zero", "science-based", "sbti", "reduction target", "by 2030", "by 2050"],
+            "Climate risk assessment":           ["physical risk", "transition risk", "climate risk", "scenario analysis", "tcfd"],
+        }
+    },
+    "ESRS E2 – Pollution": {
+        "section_headers": ["pollution", "air emissions", "water pollution", "hazardous substances", "contaminants", "effluent"],
+        "required_disclosures": {
+            "Air pollutant data":      ["nox", "sox", "voc", "particulate matter", "air emissions data"],
+            "Hazardous substances":    ["hazardous substances", "toxic", "persistent pollutants", "chemicals"],
+            "Pollution targets":       ["pollution reduction", "emission limits", "zero discharge"],
+        }
+    },
+    "ESRS E3 – Water & Marine": {
+        "section_headers": ["water", "water stewardship", "water management", "marine", "effluent", "water resources"],
+        "required_disclosures": {
+            "Water withdrawal volumes":  ["water withdrawal", "megalitres", "m3", "cubic metres", "water consumed"],
+            "Water discharge data":      ["water discharge", "effluent discharge", "wastewater"],
+            "Water stress assessment":   ["water stress", "water risk", "water-scarce", "aqueduct"],
+        }
+    },
+    "ESRS E4 – Biodiversity": {
+        "section_headers": ["biodiversity", "ecosystems", "habitats", "nature", "species", "land use"],
+        "required_disclosures": {
+            "Site-level biodiversity":   ["protected areas", "sensitive habitats", "sites near biodiversity"],
+            "Impact assessment":         ["biodiversity impact", "habitat loss", "species affected", "ecological"],
+            "Biodiversity targets":      ["biodiversity target", "no net loss", "nature positive", "restoration"],
+        }
+    },
+    "ESRS E5 – Circular Economy": {
+        "section_headers": ["circular economy", "waste", "recycling", "resource efficiency", "materials", "end of life"],
+        "required_disclosures": {
+            "Waste volumes":             ["waste generated", "tonnes of waste", "total waste", "hazardous waste"],
+            "Waste diverted":            ["recycled", "reused", "composted", "waste diverted", "recovery rate"],
+            "Circular targets":          ["zero waste", "waste reduction target", "circularity", "recycling rate"],
+        }
+    },
+    "ESRS S1 – Own Workforce": {
+        "section_headers": ["own workforce", "employees", "workforce", "human capital", "people", "health and safety", "occupational"],
+        "required_disclosures": {
+            "Workforce headcount":       ["total employees", "full-time", "part-time", "headcount", "number of employees"],
+            "Health & safety data":      ["injury rate", "fatalities", "ltir", "trir", "lost time", "recordable incidents"],
+            "Training data":             ["training hours", "hours per employee", "learning hours", "development hours"],
+            "Diversity data":            ["gender ratio", "women in", "% female", "diversity breakdown", "inclusion metrics"],
+        }
+    },
+    "ESRS S2 – Value Chain Workers": {
+        "section_headers": ["value chain workers", "supply chain labour", "supplier workers", "contractor", "outsourced workforce"],
+        "required_disclosures": {
+            "Supply chain labour risks":  ["labour rights", "forced labour", "child labour", "working conditions supply"],
+            "Due diligence process":      ["supplier audit", "social audit", "supply chain assessment", "labour due diligence"],
+            "Remediation actions":        ["remediation supply", "corrective action supplier", "worker grievance supply"],
+        }
+    },
+    "ESRS S3 – Affected Communities": {
+        "section_headers": ["affected communities", "local communities", "community impact", "social impact", "community engagement"],
+        "required_disclosures": {
+            "Community impact assessment": ["social impact assessment", "community impact assessment", "affected community identified"],
+            "Engagement process":          ["community consultation", "stakeholder dialogue", "grievance mechanism community", "community feedback"],
+            "Negative impact mitigation":  ["community grievance", "negative impact community", "resettlement", "community remedy"],
+        }
+    },
+    "ESRS S4 – Consumers & End-users": {
+        "section_headers": ["consumers", "customers", "end-users", "product safety", "customer privacy", "data protection"],
+        "required_disclosures": {
+            "Product safety data":        ["product safety incidents", "recalls", "safety complaints", "product liability"],
+            "Privacy/data incidents":     ["data breach", "privacy complaints", "gdpr", "personal data incidents"],
+            "Customer satisfaction":      ["customer satisfaction", "nps", "net promoter", "customer complaints"],
+        }
+    },
+    "ESRS G1 – Business Conduct": {
+        "section_headers": ["business conduct", "ethics", "anti-corruption", "governance", "compliance", "integrity"],
+        "required_disclosures": {
+            "Anti-corruption policy":     ["anti-corruption policy", "anti-bribery policy", "code of conduct", "zero tolerance"],
+            "Corruption incidents":       ["corruption incidents", "bribery cases", "violations reported", "fines penalties"],
+            "Whistleblowing mechanism":   ["whistleblowing", "speak up", "ethics hotline", "reporting channel"],
+        }
+    },
 }
 
 BRSR_PRINCIPLES = {
@@ -651,12 +723,110 @@ def detect_greenwashing(text: str) -> pd.DataFrame:
     return pd.DataFrame(rows).drop_duplicates(subset=["Claim Detected"]) if rows else pd.DataFrame()
 
 
-def esrs_coverage(text: str) -> pd.DataFrame:
+def extract_sections(text: str) -> dict:
+    """
+    Split document into logical sections based on heading patterns.
+    Returns dict of {section_name: section_text}.
+    Looks for lines that are ALL CAPS, Title Case followed by newline,
+    or numbered headings like '3.1 Climate Change'.
+    """
+    # Pattern: heading is a short line (< 80 chars) that looks like a title
+    heading_re = re.compile(
+        r'(?:^|\n)([A-Z][^\n]{3,70})(?=\n)',
+    )
+    positions = [(m.start(), m.group(1).strip()) for m in heading_re.finditer(text)]
+
+    sections = {}
+    for i, (pos, heading) in enumerate(positions):
+        end = positions[i + 1][0] if i + 1 < len(positions) else len(text)
+        sections[heading.lower()] = text[pos:end].lower()
+
+    # Always include full text as fallback
+    sections["__full__"] = text
+    return sections
+
+
+def find_relevant_sections(sections: dict, section_headers: list) -> str:
+    """
+    Find sections whose headings match any of the topic's section headers.
+    Returns concatenated text of matching sections.
+    Falls back to full text windowed search if no section found.
+    """
+    matched_text = []
+    for heading, content in sections.items():
+        if heading == "__full__":
+            continue
+        if any(h in heading for h in section_headers):
+            matched_text.append(content)
+
+    # If no sections matched, use surrounding windows from full text
+    if not matched_text:
+        full = sections.get("__full__", "")
+        for header in section_headers:
+            if header in full:
+                matched_text.append(surrounding_window(full, header, window=1500))
+
+    return " ".join(matched_text)
+
+
+def esrs_section_score(topic_data: dict, sections: dict) -> tuple:
+    """
+    Score a single ESRS topic using section-aware detection.
+    Returns (score, status, disclosure_detail_dict).
+    
+    Logic:
+    1. Find sections matching this topic's headers
+    2. Within those sections, check for required disclosures
+    3. Score = % of required disclosures found IN relevant sections
+    4. If no relevant section found at all → Missing (not just keyword absent)
+    """
+    section_text = find_relevant_sections(sections, topic_data["section_headers"])
+
+    if not section_text.strip():
+        return 0, "Missing", {d: "❌ No relevant section found" for d in topic_data["required_disclosures"]}
+
+    disclosure_results = {}
+    found_count = 0
+
+    for disclosure_name, evidence_terms in topic_data["required_disclosures"].items():
+        # Check if evidence terms appear IN the relevant section
+        found_in_section = any(term in section_text for term in evidence_terms)
+        # Also check context quality within section
+        ctx_quality = context_quality_score(section_text, evidence_terms) if found_in_section else 0
+
+        if found_in_section and ctx_quality >= 20:
+            disclosure_results[disclosure_name] = "✅ Disclosed"
+            found_count += 1
+        elif found_in_section:
+            disclosure_results[disclosure_name] = "⚠️ Mentioned (lacks data/methodology)"
+            found_count += 0.4  # partial credit
+        else:
+            disclosure_results[disclosure_name] = "❌ Not found in relevant section"
+
+    total = len(topic_data["required_disclosures"])
+    score = round((found_count / total) * 100) if total > 0 else 0
+
+    status = "Disclosed" if score >= 60 else "Partial" if score >= 25 else "Missing"
+    return score, status, disclosure_results
+
+
+def esrs_coverage(text: str, sections: dict) -> pd.DataFrame:
+    """Section-aware ESRS coverage analysis."""
     rows = []
-    for topic, kws in ESRS_TOPICS.items():
-        score  = combined_score(text, kws)
-        status = "Disclosed" if score >= 55 else "Partial" if score >= 25 else "Missing"
-        rows.append({"ESRS Topic": topic, "Status": status, "Coverage Score": score})
+    for topic, data in ESRS_TOPICS.items():
+        score, status, disclosures = esrs_section_score(data, sections)
+        disclosed_count = sum(1 for v in disclosures.values() if v.startswith("✅"))
+        partial_count   = sum(1 for v in disclosures.values() if v.startswith("⚠️"))
+        missing_count   = sum(1 for v in disclosures.values() if v.startswith("❌"))
+        rows.append({
+            "ESRS Topic":        topic,
+            "Status":            status,
+            "Coverage Score":    score,
+            "✅ Disclosed":      disclosed_count,
+            "⚠️ Partial":       partial_count,
+            "❌ Missing":        missing_count,
+            "_disclosures":      disclosures,  # hidden detail column
+        })
     return pd.DataFrame(rows)
 
 
@@ -1093,7 +1263,8 @@ text = clean_text(raw_text)
 framework_scores, pillar_scores = calculate_scores(text)
 gaps_df         = build_gap_table(text)
 greenwashing_df = detect_greenwashing(text)
-esrs_df         = esrs_coverage(text)
+sections        = extract_sections(text)
+esrs_df         = esrs_coverage(text, sections)
 brsr_df         = brsr_coverage(text)
 gri_coverage_df = gri_standard_coverage(text)
 gri_detail_df   = gri_disclosure_detail(text)
@@ -1329,10 +1500,22 @@ with tab6:
 # ── Tab 7: ESRS Coverage ──────────────────────────────────────────────────────
 with tab7:
     st.subheader("ESRS Topic Coverage")
-    st.dataframe(esrs_df, use_container_width=True, hide_index=True)
+    st.caption("Section-aware analysis — checks whether disclosures appear in relevant report sections, not just anywhere in the document.")
+    st.info("⚠️ 'Disclosed' means required evidence was found in a relevant section with supporting data. It is not a formal compliance opinion.")
+
+    display_esrs = esrs_df[["ESRS Topic", "Status", "Coverage Score", "✅ Disclosed", "⚠️ Partial", "❌ Missing"]].copy()
+    st.dataframe(display_esrs, use_container_width=True, hide_index=True)
+
+    st.markdown("#### Disclosure Detail by Topic")
+    for _, row in esrs_df.iterrows():
+        status_icon = "✅" if row["Status"] == "Disclosed" else "⚠️" if row["Status"] == "Partial" else "❌"
+        with st.expander(f"{status_icon} {row['ESRS Topic']} — Score: {row['Coverage Score']}/100"):
+            for disc_name, disc_status in row["_disclosures"].items():
+                st.markdown(f"**{disc_name}** — {disc_status}")
+
     st.download_button(
         "⬇️ Download ESRS Coverage CSV",
-        esrs_df.to_csv(index=False).encode("utf-8"),
+        display_esrs.to_csv(index=False).encode("utf-8"),
         file_name="esrs_topic_coverage.csv", mime="text/csv",
     )
 
